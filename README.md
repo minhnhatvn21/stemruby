@@ -61,3 +61,34 @@ Mở `http://localhost:3000`.
 
 ## Lưu ý
 - Đây là bản mẫu đầy đủ luồng chính, có thể mở rộng thêm âm thanh, leaderboard realtime, và rules Firestore chi tiết theo lớp/trường.
+
+## 8) Khắc phục lỗi đăng ký (rất quan trọng)
+Nếu bạn gặp lỗi kiểu “tài khoản đã tồn tại / mật khẩu yếu” dù nhập đúng, nguyên nhân thường là:
+- Bắt lỗi chung (đã được sửa trong code mới để báo chính xác theo Firebase error code).
+- Firestore Rules chặn ghi hồ sơ sau khi Auth đã tạo user.
+
+### Firestore Rules gợi ý cho bản demo
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    match /progress/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    match /surveyResponses/{uid}/responses/{docId} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    // Mapping tài khoản -> email ảo
+    match /usernames/{account} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+```
+
+### Lưu ý ENV
+- Biến `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID` không bắt buộc (không có cũng chạy được).
+- `AUTH_DOMAIN`, `PROJECT_ID`, `APP_ID` phải cùng đúng 1 project Firebase.

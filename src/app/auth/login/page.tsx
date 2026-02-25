@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, type AuthError } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -9,7 +9,23 @@ import Link from 'next/link';
 import AppShell from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { findEmailByAccount } from '@/lib/firestore';
+
+function createVirtualEmail(account: string) {
+  return `${account.toLowerCase()}@stemruby.local`;
+}
+
+function getLoginErrorMessage(code: string) {
+  switch (code) {
+    case 'auth/invalid-credential':
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+      return 'Sai tài khoản hoặc mật khẩu. Vui lòng thử lại.';
+    case 'auth/too-many-requests':
+      return 'Bạn thử quá nhiều lần. Vui lòng chờ ít phút rồi thử lại.';
+    default:
+      return 'Không thể đăng nhập lúc này. Vui lòng thử lại.';
+  }
+}
 
 export default function LoginPage() {
   const [account, setAccount] = useState('');
@@ -22,17 +38,13 @@ export default function LoginPage() {
     try {
       setLoading(true);
       const normalizedAccount = account.trim().toLowerCase();
-      const email = await findEmailByAccount(normalizedAccount);
-      if (!email) {
-        toast.error('Không tìm thấy tài khoản.');
-        return;
-      }
-
+      const email = createVirtualEmail(normalizedAccount);
       await signInWithEmailAndPassword(auth, email, password);
       toast.success('Đăng nhập thành công!');
       router.push('/dashboard');
-    } catch {
-      toast.error('Sai tài khoản hoặc mật khẩu. Vui lòng thử lại.');
+    } catch (error) {
+      const code = (error as Partial<AuthError> & { code?: string }).code ?? 'unknown';
+      toast.error(getLoginErrorMessage(code));
     } finally {
       setLoading(false);
     }

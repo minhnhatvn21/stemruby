@@ -1,17 +1,32 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, type AuthError } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { bootstrapUser, isAccountTaken } from '@/lib/firestore';
+import { bootstrapUser } from '@/lib/firestore';
 import AppShell from '@/components/AppShell';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 
 function createVirtualEmail(account: string) {
   return `${account.toLowerCase()}@stemruby.local`;
+}
+
+function getRegisterErrorMessage(code: string) {
+  switch (code) {
+    case 'auth/email-already-in-use':
+      return 'Tài khoản đã tồn tại. Vui lòng chọn tài khoản khác.';
+    case 'auth/weak-password':
+      return 'Mật khẩu còn yếu. Hãy dùng ít nhất 6 ký tự, có chữ và số.';
+    case 'auth/invalid-email':
+      return 'Tên tài khoản chưa hợp lệ. Chỉ dùng chữ thường, số, dấu gạch dưới.';
+    case 'permission-denied':
+      return 'Đăng ký Auth thành công nhưng chưa lưu được hồ sơ. Vui lòng kiểm tra Firestore Rules.';
+    default:
+      return 'Không thể đăng ký lúc này. Vui lòng thử lại.';
+  }
 }
 
 export default function RegisterPage() {
@@ -33,6 +48,11 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!/^[a-z0-9_]{4,30}$/i.test(account.trim())) {
+      toast.error('Tài khoản chỉ gồm chữ, số, gạch dưới và dài 4-30 ký tự.');
+      return;
+    }
+
     if (password !== confirmPassword) {
       toast.error('Mật khẩu xác nhận chưa khớp.');
       return;
@@ -41,15 +61,11 @@ export default function RegisterPage() {
     try {
       setLoading(true);
       const normalizedAccount = account.trim().toLowerCase();
-      const existed = await isAccountTaken(normalizedAccount);
-      if (existed) {
-        toast.error('Tên tài khoản đã tồn tại. Hãy chọn tên khác.');
-        return;
-      }
-
       const email = createVirtualEmail(normalizedAccount);
       const credential = await createUserWithEmailAndPassword(auth, email, password);
+
       await updateProfile(credential.user, { displayName });
+
       await bootstrapUser(credential.user.uid, {
         account: normalizedAccount,
         displayName,
@@ -61,8 +77,9 @@ export default function RegisterPage() {
 
       toast.success('Tạo tài khoản thành công!');
       router.push('/dashboard');
-    } catch {
-      toast.error('Không thể đăng ký. Mật khẩu cần mạnh hơn hoặc tài khoản đã tồn tại.');
+    } catch (error) {
+      const code = (error as Partial<AuthError> & { code?: string }).code ?? 'unknown';
+      toast.error(getRegisterErrorMessage(code));
     } finally {
       setLoading(false);
     }
