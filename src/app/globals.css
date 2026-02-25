@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0a0a0a;
+  --card: #2a2a2a;
+  --fire-red: #ff2a2a;
+  --fire-orange: #ff7a00;
+  --fire-yellow: #ffc400;
+}
+
+body {
+  color: #fff5d9;
+  background: radial-gradient(circle at 20% 20%, #2a0f0f 0%, var(--bg) 60%);
+  font-family: var(--font-inter), sans-serif;
+}
+
+h1, h2, h3, .display-font {
+  font-family: var(--font-oxanium), sans-serif;
+  text-shadow: 0 0 10px rgba(255, 122, 0, 0.6);
+}
+
+.fire-gradient {
+  background: linear-gradient(135deg, var(--fire-red), var(--fire-orange), var(--fire-yellow));
+}
+
+.fire-border {
+  border: 1px solid rgba(255, 122, 0, 0.55);
+  box-shadow: 0 0 20px rgba(255, 122, 0, 0.2);
+}
