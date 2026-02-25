@@ -63,9 +63,11 @@ Mở `http://localhost:3000`.
 - Đây là bản mẫu đầy đủ luồng chính, có thể mở rộng thêm âm thanh, leaderboard realtime, và rules Firestore chi tiết theo lớp/trường.
 
 ## 8) Khắc phục lỗi đăng ký (rất quan trọng)
-Nếu bạn gặp lỗi kiểu “tài khoản đã tồn tại / mật khẩu yếu” dù nhập đúng, nguyên nhân thường là:
-- Bắt lỗi chung (đã được sửa trong code mới để báo chính xác theo Firebase error code).
+Nếu bạn gặp lỗi kiểu “không thể đăng ký lúc này”, nguyên nhân thường là:
 - Firestore Rules chặn ghi hồ sơ sau khi Auth đã tạo user.
+- Mã lỗi Firebase chưa được hiển thị rõ.
+
+Bản mới đã hiển thị mã lỗi thật trong toast (ví dụ: `auth/email-already-in-use`, `auth/weak-password`, `permission-denied`) để dễ debug.
 
 ### Firestore Rules gợi ý cho bản demo
 ```

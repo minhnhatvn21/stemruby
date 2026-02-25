@@ -15,18 +15,25 @@ function createVirtualEmail(account: string) {
 }
 
 function getRegisterErrorMessage(code: string) {
-  switch (code) {
-    case 'auth/email-already-in-use':
-      return 'Tài khoản đã tồn tại. Vui lòng chọn tài khoản khác.';
-    case 'auth/weak-password':
-      return 'Mật khẩu còn yếu. Hãy dùng ít nhất 6 ký tự, có chữ và số.';
-    case 'auth/invalid-email':
-      return 'Tên tài khoản chưa hợp lệ. Chỉ dùng chữ thường, số, dấu gạch dưới.';
-    case 'permission-denied':
-      return 'Đăng ký Auth thành công nhưng chưa lưu được hồ sơ. Vui lòng kiểm tra Firestore Rules.';
-    default:
-      return 'Không thể đăng ký lúc này. Vui lòng thử lại.';
+  const normalized = code.toLowerCase();
+
+  if (normalized.includes('auth/email-already-in-use')) {
+    return 'Tài khoản đã tồn tại. Vui lòng chọn tài khoản khác.';
   }
+  if (normalized.includes('auth/weak-password')) {
+    return 'Mật khẩu còn yếu. Hãy dùng ít nhất 6 ký tự, có chữ và số.';
+  }
+  if (normalized.includes('auth/invalid-email')) {
+    return 'Tên tài khoản chưa hợp lệ. Chỉ dùng chữ, số, dấu gạch dưới.';
+  }
+  if (normalized.includes('permission-denied')) {
+    return 'Đã tạo Auth nhưng chưa lưu được hồ sơ. Hãy kiểm tra Firestore Rules.';
+  }
+  if (normalized.includes('network-request-failed')) {
+    return 'Lỗi mạng khi đăng ký. Vui lòng kiểm tra kết nối internet.';
+  }
+
+  return `Không thể đăng ký lúc này (${code}).`;
 }
 
 export default function RegisterPage() {

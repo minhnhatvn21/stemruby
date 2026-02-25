@@ -1,4 +1,4 @@
-import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, serverTimestamp, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 export type StudentProfileInput = {
@@ -10,27 +10,15 @@ export type StudentProfileInput = {
   email: string;
 };
 
-export async function isAccountTaken(account: string) {
-  const accountRef = doc(db, 'usernames', account.toLowerCase());
-  const snapshot = await getDoc(accountRef);
-  return snapshot.exists();
-}
-
-export async function findEmailByAccount(account: string) {
-  const accountRef = doc(db, 'usernames', account.toLowerCase());
-  const snapshot = await getDoc(accountRef);
-  if (!snapshot.exists()) return null;
-  return snapshot.data().email as string;
-}
-
 export async function bootstrapUser(uid: string, profile: StudentProfileInput) {
   const userRef = doc(db, 'users', uid);
   const progressRef = doc(db, 'progress', uid);
   const accountRef = doc(db, 'usernames', profile.account.toLowerCase());
 
-  const uSnap = await getDoc(userRef);
-  if (!uSnap.exists()) {
-    await setDoc(userRef, {
+  // Không đọc trước để tránh lỗi permission ở các rules chỉ cho phép write.
+  await setDoc(
+    userRef,
+    {
       account: profile.account.toLowerCase(),
       displayName: profile.displayName,
       className: profile.className,
@@ -39,31 +27,43 @@ export async function bootstrapUser(uid: string, profile: StudentProfileInput) {
       email: profile.email,
       createdAt: serverTimestamp(),
       totalPoints: 0
-    });
-  }
+    },
+    { merge: true }
+  );
 
-  const pSnap = await getDoc(progressRef);
-  if (!pSnap.exists()) {
-    await setDoc(progressRef, { modules: {}, streak: 0 });
-  }
+  await setDoc(
+    progressRef,
+    {
+      modules: {},
+      streak: 0
+    },
+    { merge: true }
+  );
 
-  const aSnap = await getDoc(accountRef);
-  if (!aSnap.exists()) {
-    await setDoc(accountRef, {
+  await setDoc(
+    accountRef,
+    {
       uid,
       email: profile.email,
       createdAt: serverTimestamp()
-    });
-  }
+    },
+    { merge: true }
+  );
 }
 
 export async function completeModule(uid: string, moduleId: string, points: number) {
   const progressRef = doc(db, 'progress', uid);
   const userRef = doc(db, 'users', uid);
 
-  await updateDoc(progressRef, {
-    [`modules.${moduleId}`]: { completed: true, points, updatedAt: serverTimestamp() }
-  });
+  await setDoc(
+    progressRef,
+    {
+      modules: {
+        [moduleId]: { completed: true, points, updatedAt: serverTimestamp() }
+      }
+    },
+    { merge: true }
+  );
 
   const current = await getDoc(userRef);
   const existing = (current.data()?.totalPoints as number | undefined) ?? 0;
